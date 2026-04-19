@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>दूध ट्रॅकर</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #fffbf5; --bg2: #fff8ee; --bg3: #fef3e2;
+    --primary: #e07b00; --primary-dark: #b56200;
+    --success: #2e7d32; --success-bg: #e8f5e9;
+    --danger: #c62828; --danger-bg: #ffebee;
+    --text: #1a1208; --muted: #8d6e3f;
+    --border: rgba(224,123,0,0.15); --card: #ffffff;
+    --shadow: 0 2px 16px rgba(224,123,0,0.1);
+  }
+  body { font-family: 'Baloo 2', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; }
+
+  .header { background: linear-gradient(135deg, #e07b00, #ff9a1f); padding: 1.5rem 1.2rem 2rem; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: '🥛'; position: absolute; font-size: 8rem; right: -20px; top: -20px; opacity: 0.12; transform: rotate(15deg); }
+  .header-title { font-size: 1.8rem; font-weight: 800; color: white; }
+  .header-sub { color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 4px; }
+  .header-date { background: rgba(255,255,255,0.2); display: inline-block; padding: 4px 14px; border-radius: 100px; color: white; font-size: 0.82rem; margin-top: 8px; }
+
+  /* Role selector */
+  .role-bar { background: white; padding: 10px 1.2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .role-label { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+  .role-btns { display: flex; gap: 6px; }
+  .role-btn { padding: 5px 14px; border-radius: 100px; border: 1.5px solid var(--border); background: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Baloo 2', sans-serif; color: var(--muted); transition: all 0.2s; }
+  .role-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .tabs { display: flex; background: white; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .tab { flex: 1; padding: 13px 8px; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: 'Baloo 2', sans-serif; transition: all 0.2s; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .page { display: none; padding: 1.2rem; }
+  .page.active { display: block; }
+
+  .card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); padding: 1.2rem; margin-bottom: 1rem; }
+  .card-title { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem; }
+
+  .today-info { display: flex; align-items: center; justify-content: space-between; background: var(--bg3); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+  .today-label { font-size: 0.85rem; color: var(--muted); }
+  .today-date { font-size: 1.1rem; font-weight: 700; }
+  .price-badge { background: var(--primary); color: white; font-size: 0.82rem; font-weight: 700; padding: 4px 12px; border-radius: 100px; }
+
+  .milk-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .milk-btn { padding: 1.2rem; border-radius: 14px; border: 2px solid transparent; font-family: 'Baloo 2', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .milk-btn span { font-size: 2rem; }
+  .btn-yes { background: var(--success-bg); color: var(--success); border-color: rgba(46,125,50,0.2); }
+  .btn-yes:hover, .btn-yes.selected { background: var(--success); color: white; transform: scale(1.02); box-shadow: 0 4px 16px rgba(46,125,50,0.3); }
+  .btn-no { background: var(--danger-bg); color: var(--danger); border-color: rgba(198,40,40,0.2); }
+  .btn-no:hover, .btn-no.selected { background: var(--danger); color: white; transform: scale(1.02); box-shadow: 0 4px 16px rgba(198,40,40,0.3); }
+
+  .save-btn { width: 100%; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; transition: all 0.2s; box-shadow: 0 4px 16px rgba(224,123,0,0.3); }
+  .save-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+  .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .stat-box { background: var(--card); border-radius: 14px; padding: 1rem; text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .stat-num { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+  .h-date { font-size: 0.88rem; font-weight: 600; }
+  .h-day { font-size: 0.75rem; color: var(--muted); }
+  .h-badge { font-size: 0.78rem; font-weight: 700; padding: 4px 12px; border-radius: 100px; }
+  .h-took { background: var(--success-bg); color: var(--success); }
+  .h-skip { background: var(--danger-bg); color: var(--danger); }
+
+  .bill-box { background: linear-gradient(135deg, #e07b00, #ff9a1f); border-radius: 16px; padding: 1.5rem; color: white; text-align: center; margin-bottom: 1rem; }
+  .bill-amount { font-size: 2.8rem; font-weight: 800; line-height: 1; }
+  .bill-sub { font-size: 0.82rem; opacity: 0.8; margin-top: 6px; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-name { text-align: center; font-size: 0.7rem; color: var(--muted); font-weight: 600; padding: 4px 0; }
+  .cal-day { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 500; }
+  .cal-day.took { background: var(--success); color: white; font-weight: 700; }
+  .cal-day.skip { background: var(--danger-bg); color: var(--danger); }
+  .cal-day.today-cal { box-shadow: 0 0 0 2px var(--primary); }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .cal-nav { background: var(--bg3); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+  .cal-month { font-size: 1rem; font-weight: 700; }
+
+  .month-selector { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.9rem; font-family: 'Baloo 2', sans-serif; background: white; color: var(--text); margin-bottom: 1rem; }
+
+  /* Customer list */
+  .customer-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg3); border-radius: 10px; margin-bottom: 8px; }
+  .customer-name { font-weight: 700; font-size: 0.95rem; }
+  .customer-sub { font-size: 0.78rem; color: var(--muted); }
+
+  /* Add customer */
+  .input-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .input-row input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.9rem; font-family: 'Baloo 2', sans-serif; }
+  .input-row button { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; }
+
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.9rem; }
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #1a1208; color: white; padding: 12px 24px; border-radius: 100px; font-size: 0.9rem; font-weight: 600; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .readonly-notice { background: #e3f2fd; border: 1px solid #90caf9; border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; color: #1565c0; margin-bottom: 1rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🥛 दूध ट्रॅकर</div>
+  <div class="header-sub">Milk Delivery Tracker</div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="role-bar">
+  <span class="role-label">Mode:</span>
+  <div class="role-btns">
+    <button class="role-btn active" id="roleOwner" onclick="setRole('owner')">🏪 Shop Owner</button>
+    <button class="role-btn" id="roleCustomer" onclick="setRole('customer')">👤 Customer</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('today', event)">📅 आज</button>
+  <button class="tab" onclick="showPage('calendar', event)">🗓️ Calendar</button>
+  <button class="tab" onclick="showPage('bill', event)">💰 Bill</button>
+  <button class="tab" id="tabCustomers" onclick="showPage('customers', event)">👥 Customers</button>
+</div>
+
+<!-- TODAY PAGE -->
+<div class="page active" id="page-today">
+  <div class="today-info">
+    <div>
+      <div class="today-label">आजची तारीख</div>
+      <div class="today-date" id="todayDate"></div>
+    </div>
+    <div class="price-badge" id="priceDisplay">₹34</div>
+  </div>
+
+  <div id="ownerMarkSection">
+    <!-- Owner: select customer + mark -->
+    <div class="card" id="ownerSection">
+      <div class="card-title">Customer निवडा</div>
+      <select id="customerSelect" class="month-selector" style="margin-bottom:0.5rem">
+        <option value="">-- Customer निवडा --</option>
+      </select>
+      <div class="milk-btns" style="margin-top:0.8rem">
+        <button class="milk-btn btn-yes" id="btnYes" onclick="selectMilk('yes')"><span>✅</span>हो, घेतलं!</button>
+        <button class="milk-btn btn-no" id="btnNo" onclick="selectMilk('no')"><span>❌</span>नाही घेतलं</button>
+      </div>
+      <button class="save-btn" id="saveBtn" onclick="saveToday()" disabled>Save करा</button>
+    </div>
+  </div>
+
+  <div id="customerViewSection" style="display:none">
+    <div class="readonly-notice">👁️ Customer view — फक्त बघता येतं</div>
+    <div id="customerTodayStatus" class="card" style="text-align:center;padding:2rem">
+      <div style="font-size:3rem;margin-bottom:0.5rem" id="todayStatusIcon">⏳</div>
+      <div style="font-weight:700;font-size:1.1rem" id="todayStatusText">आजची नोंद नाही</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-num" id="statTook">0</div><div class="stat-label">दिवस घेतलं 🥛</div></div>
+    <div class="stat-box"><div class="stat-num" id="statSkip">0</div><div class="stat-label">दिवस नाही ❌</div></div>
+    <div class="stat-box"><div class="stat-num" id="statDue" style="color:var(--success)">₹0</div><div class="stat-label">या महिन्याचं bill</div></div>
+    <div class="stat-box"><div class="stat-num" id="statDays">0</div><div class="stat-label">दिवस बाकी</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">मागील 7 दिवस</div>
+    <div id="recentHistory"><div class="loading">लोड होतंय...</div></div>
+  </div>
+</div>
+
+<!-- CALENDAR PAGE -->
+<div class="page" id="page-calendar">
+  <div class="card">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeCalMonth(-1)">◀</button>
+      <div class="cal-month" id="calMonthLabel"></div>
+      <button class="cal-nav" onclick="changeCalMonth(1)">▶</button>
+    </div>
+    <div class="cal-grid" id="calDayNames"></div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+  <div class="stats-grid" style="margin-bottom:0">
+    <div class="stat-box"><div class="stat-num" id="calTook">0</div><div class="stat-label">घेतलं 🥛</div></div>
+    <div class="stat-box"><div class="stat-num" id="calSkip">0</div><div class="stat-label">नाही ❌</div></div>
+  </div>
+</div>
+
+<!-- BILL PAGE -->
+<div class="page" id="page-bill">
+  <select class="month-selector" id="billMonthSelect" onchange="renderBill()"></select>
+  <div class="bill-box">
+    <div style="font-size:0.85rem;opacity:0.9;margin-bottom:6px">एकूण Bill</div>
+    <div class="bill-amount" id="billAmount">₹0</div>
+    <div class="bill-sub" id="billSub">0 दिवस × ₹34</div>
+  </div>
+  <div class="card">
+    <div class="card-title">तपशील</div>
+    <div id="billHistory"></div>
+  </div>
+</div>
+
+<!-- CUSTOMERS PAGE (owner only) -->
+<div class="page" id="page-customers">
+  <div class="card">
+    <div class="card-title">नवीन Customer जोडा</div>
+    <div class="input-row">
+      <input type="text" id="newCustomerName" placeholder="Customer चं नाव">
+      <button onclick="addCustomer()">+ जोडा</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">सर्व Customers</div>
+    <div id="customersList"><div class="loading">लोड होतंय...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBBAV0cg-O98WFkXzcKObpyUTCGHRjPGeA",
+  authDomain: "milk-tracker-f1f1f.firebaseapp.com",
+  projectId: "milk-tracker-f1f1f",
+  storageBucket: "milk-tracker-f1f1f.firebasestorage.app",
+  messagingSenderId: "987049250355",
+  appId: "1:987049250355:web:c0146207cde83c09eadd46"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---- State ----
+let role = 'owner';
+let selectedMilk = null;
+let price = parseInt(localStorage.getItem('milkPrice') || '34');
+let customers = [];
+let selectedCustomerId = null;
+let calViewDate = new Date();
+
+const dayNames = ['रवि','सोम','मंगळ','बुध','गुरु','शुक्र','शनि'];
+const monthNames = ['जानेवारी','फेब्रुवारी','मार्च','एप्रिल','मे','जून','जुलै','ऑगस्ट','सप्टेंबर','ऑक्टोबर','नोव्हेंबर','डिसेंबर'];
+
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function todayKey() { return dateKey(new Date()); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ---- Role ----
+window.setRole = function(r) {
+  role = r;
+  document.getElementById('roleOwner').classList.toggle('active', r === 'owner');
+  document.getElementById('roleCustomer').classList.toggle('active', r === 'customer');
+  document.getElementById('ownerMarkSection').style.display = r === 'owner' ? 'block' : 'none';
+  document.getElementById('customerViewSection').style.display = r === 'customer' ? 'block' : 'none';
+  document.getElementById('tabCustomers').style.display = r === 'owner' ? 'block' : 'none';
+  if (r === 'customer') {
+    const sel = document.getElementById('customerSelect');
+    selectedCustomerId = sel.value || null;
+    loadCustomerToday();
+  }
+  updateStats();
+  renderRecent();
+}
+
+// ---- Pages ----
+window.showPage = function(name, e) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (e && e.target) e.target.classList.add('active');
+  if (name === 'calendar') renderCalendar();
+  if (name === 'bill') renderBill();
+  if (name === 'customers') renderCustomersList();
+}
+
+// ---- Customers ----
+async function loadCustomers() {
+  try {
+    const snap = await getDocs(collection(db, 'customers'));
+    customers = [];
+    snap.forEach(d => customers.push({ id: d.id, ...d.data() }));
+    const sel = document.getElementById('customerSelect');
+    sel.innerHTML = '<option value="">-- Customer निवडा --</option>';
+    customers.forEach(c => {
+      sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    });
+    sel.onchange = () => {
+      selectedCustomerId = sel.value || null;
+      selectedMilk = null;
+      document.getElementById('btnYes').classList.remove('selected');
+      document.getElementById('btnNo').classList.remove('selected');
+      document.getElementById('saveBtn').disabled = true;
+      if (selectedCustomerId) checkTodayExists();
+      updateStats();
+      renderRecent();
+    };
+    if (customers.length > 0) {
+      sel.value = customers[0].id;
+      selectedCustomerId = customers[0].id;
+      checkTodayExists();
+      updateStats();
+      renderRecent();
+    }
+  } catch(e) { console.error(e); }
+}
+
+window.addCustomer = async function() {
+  const name = document.getElementById('newCustomerName').value.trim();
+  if (!name) { showToast('⚠️ नाव टाका!'); return; }
+  try {
+    await addDoc(collection(db, 'customers'), { name, createdAt: new Date().toISOString() });
+    document.getElementById('newCustomerName').value = '';
+    showToast('✅ Customer जोडला!');
+    loadCustomers();
+    renderCustomersList();
+  } catch(e) { showToast('❌ Error झाली!'); }
+}
+
+async function renderCustomersList() {
+  const el = document.getElementById('customersList');
+  el.innerHTML = '<div class="loading">लोड होतंय...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'customers'));
+    const list = [];
+    snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+    if (list.length === 0) { el.innerHTML = '<div class="loading">अजून कोणी नाही — वर जोडा!</div>'; return; }
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    el.innerHTML = '';
+    for (const c of list) {
+      const recordsSnap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',c.id)));
+      let monthTook = 0;
+      recordsSnap.forEach(d => { const r = d.data(); if (r.date.startsWith(ym) && r.took) monthTook++; });
+      el.innerHTML += `<div class="customer-item">
+        <div>
+          <div class="customer-name">👤 ${c.name}</div>
+          <div class="customer-sub">या महिन्यात ${monthTook} दिवस — ₹${monthTook * price}</div>
+        </div>
+        <button onclick="deleteCustomer('${c.id}')" style="background:var(--danger-bg);color:var(--danger);border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:'Baloo 2',sans-serif;font-weight:700">🗑️</button>
+      </div>`;
+    }
+  } catch(e) { el.innerHTML = '<div class="loading">Error आली!</div>'; }
+}
+
+window.deleteCustomer = async function(id) {
+  if (!confirm('हा customer delete करायचा आहे का?')) return;
+  try {
+    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await deleteDoc(doc(db, 'customers', id));
+    showToast('🗑️ Customer delete झाला!');
+    loadCustomers();
+    renderCustomersList();
+  } catch(e) { showToast('❌ Error!'); }
+}
+
+// ---- Today ----
+async function checkTodayExists() {
+  if (!selectedCustomerId) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId), where('date','==',todayKey())));
+    if (!snap.empty) {
+      const data = snap.docs[0].data();
+      selectedMilk = data.took ? 'yes' : 'no';
+      updateMilkBtns();
+      const btn = document.getElementById('saveBtn');
+      btn.textContent = '✅ आज save झालंय!';
+      btn.disabled = false;
+    }
+  } catch(e) {}
+}
+
+async function loadCustomerToday() {
+  const el = document.getElementById('customerTodayStatus');
+  const icon = document.getElementById('todayStatusIcon');
+  const text = document.getElementById('todayStatusText');
+  if (!selectedCustomerId) {
+    icon.textContent = '⏳'; text.textContent = 'Customer निवडा'; return;
+  }
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId), where('date','==',todayKey())));
+    if (!snap.empty) {
+      const data = snap.docs[0].data();
+      if (data.took) { icon.textContent = '✅'; text.textContent = 'आज दूध घेतलं! ₹' + price; }
+      else { icon.textContent = '❌'; text.textContent = 'आज दूध नाही'; }
+    } else { icon.textContent = '⏳'; text.textContent = 'आजची नोंद अजून नाही'; }
+  } catch(e) {}
+}
+
+window.selectMilk = function(val) {
+  selectedMilk = val;
+  updateMilkBtns();
+  document.getElementById('saveBtn').disabled = false;
+}
+
+function updateMilkBtns() {
+  document.getElementById('btnYes').classList.toggle('selected', selectedMilk === 'yes');
+  document.getElementById('btnNo').classList.toggle('selected', selectedMilk === 'no');
+}
+
+window.saveToday = async function() {
+  if (!selectedMilk || !selectedCustomerId) { showToast('⚠️ Customer आणि status निवडा!'); return; }
+  try {
+    // Check if exists
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId), where('date','==',todayKey())));
+    if (!snap.empty) {
+      const { updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      await updateDoc(doc(db, 'milkRecords', snap.docs[0].id), { took: selectedMilk === 'yes' });
+    } else {
+      await addDoc(collection(db, 'milkRecords'), { customerId: selectedCustomerId, date: todayKey(), took: selectedMilk === 'yes', price });
+    }
+    showToast(selectedMilk === 'yes' ? '✅ दूध घेतलं — save झालं!' : '❌ आज नाही — save झालं!');
+    document.getElementById('saveBtn').textContent = '✅ Save झालं!';
+    updateStats();
+    renderRecent();
+  } catch(e) { showToast('❌ Error झाली! Internet check करा.'); }
+}
+
+// ---- Stats ----
+async function updateStats() {
+  if (!selectedCustomerId) return;
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId)));
+    let took = 0, skip = 0;
+    snap.forEach(d => { const r = d.data(); if (r.date.startsWith(ym)) { r.took ? took++ : skip++; } });
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    document.getElementById('statTook').textContent = took;
+    document.getElementById('statSkip').textContent = skip;
+    document.getElementById('statDue').textContent = '₹' + (took * price);
+    document.getElementById('statDays').textContent = daysInMonth - now.getDate();
+  } catch(e) {}
+}
+
+// ---- Recent History ----
+async function renderRecent() {
+  const el = document.getElementById('recentHistory');
+  if (!selectedCustomerId) { el.innerHTML = '<div class="loading">Customer निवडा</div>'; return; }
+  el.innerHTML = '<div class="loading">लोड होतंय...</div>';
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId)));
+    const records = {};
+    snap.forEach(d => { const r = d.data(); records[r.date] = r.took; });
+    let html = '';
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = dateKey(d);
+      const v = records[k];
+      const badge = v === true ? `<span class="h-badge h-took">🥛 घेतलं</span>`
+        : v === false ? `<span class="h-badge h-skip">❌ नाही</span>`
+        : `<span class="h-badge" style="background:#f5f5f5;color:#999">— नोंद नाही</span>`;
+      html += `<div class="history-item"><div><div class="h-date">${d.getDate()} ${monthNames[d.getMonth()]} ${k === todayKey() ? '(आज)' : ''}</div><div class="h-day">${dayNames[d.getDay()]}</div></div>${badge}</div>`;
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="loading">Error!</div>'; }
+}
+
+// ---- Calendar ----
+window.changeCalMonth = function(dir) { calViewDate.setMonth(calViewDate.getMonth() + dir); renderCalendar(); }
+
+async function renderCalendar() {
+  const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+  document.getElementById('calMonthLabel').textContent = `${monthNames[m]} ${y}`;
+  document.getElementById('calDayNames').innerHTML = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const ym = `${y}-${String(m+1).padStart(2,'0')}`;
+  if (!selectedCustomerId) { document.getElementById('calGrid').innerHTML = '<div style="grid-column:span 7;text-align:center;padding:1rem;color:var(--muted)">Customer निवडा</div>'; return; }
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId)));
+    const records = {};
+    snap.forEach(d => { const r = d.data(); records[r.date] = r.took; });
+    let html = '', took = 0, skip = 0;
+    for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = `${ym}-${String(d).padStart(2,'0')}`;
+      const v = records[k];
+      let cls = 'cal-day';
+      if (k === todayKey()) cls += ' today-cal';
+      if (v === true) { cls += ' took'; took++; }
+      else if (v === false) { cls += ' skip'; skip++; }
+      html += `<div class="${cls}">${d}</div>`;
+    }
+    document.getElementById('calGrid').innerHTML = html;
+    document.getElementById('calTook').textContent = took;
+    document.getElementById('calSkip').textContent = skip;
+  } catch(e) {}
+}
+
+// ---- Bill ----
+function populateMonthSelector() {
+  const sel = document.getElementById('billMonthSelect');
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    sel.innerHTML += `<option value="${val}">${monthNames[d.getMonth()]} ${d.getFullYear()}</option>`;
+  }
+}
+
+window.renderBill = async function() {
+  const val = document.getElementById('billMonthSelect').value;
+  if (!selectedCustomerId) { document.getElementById('billAmount').textContent = '—'; return; }
+  try {
+    const snap = await getDocs(query(collection(db, 'milkRecords'), where('customerId','==',selectedCustomerId)));
+    const entries = [];
+    snap.forEach(d => { const r = d.data(); if (r.date.startsWith(val)) entries.push(r); });
+    entries.sort((a,b) => a.date.localeCompare(b.date));
+    const took = entries.filter(r => r.took).length;
+    document.getElementById('billAmount').textContent = '₹' + (took * price);
+    document.getElementById('billSub').textContent = `${took} दिवस × ₹${price}`;
+    const histEl = document.getElementById('billHistory');
+    if (!entries.length) { histEl.innerHTML = '<div class="loading">या महिन्यात नोंद नाही</div>'; return; }
+    histEl.innerHTML = entries.map(r => {
+      const d = new Date(r.date);
+      const badge = r.took ? `<span class="h-badge h-took">🥛 ₹${price}</span>` : `<span class="h-badge h-skip">❌ ₹0</span>`;
+      return `<div class="history-item"><div><div class="h-date">${d.getDate()} ${monthNames[d.getMonth()]}</div><div class="h-day">${dayNames[d.getDay()]}</div></div>${badge}</div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ---- Init ----
+const now = new Date();
+document.getElementById('headerDate').textContent = `${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+document.getElementById('todayDate').textContent = `${dayNames[now.getDay()]}, ${now.getDate()} ${monthNames[now.getMonth()]}`;
+document.getElementById('priceDisplay').textContent = '₹' + price;
+populateMonthSelector();
+loadCustomers();
+</script>
+</body>
+</html>
